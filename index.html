@@ -135,6 +135,8 @@ textarea.input{min-height:120px;resize:vertical}
 .nutrition-hero{background:linear-gradient(145deg,#fff0f5,#f7e9ff);border-radius:30px;padding:24px;box-shadow:0 16px 36px rgba(101,67,112,.10);margin-bottom:16px}.nutrition-hero h3{font-size:28px;margin:4px 0 8px}.nutrition-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.macro-card{background:#fff;border-radius:20px;padding:14px;text-align:center;box-shadow:0 7px 20px rgba(79,51,95,.06)}.macro-card b{display:block;font-size:21px;margin-top:5px}.macro-card small{color:var(--muted)}.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.form-grid .wide{grid-column:1/-1}.food-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}.food-row:last-child{border-bottom:0}.food-row b{display:block}.food-row small{color:var(--muted)}.food-kcal{font-weight:800}.macro-progress{height:9px;background:#eee4f2;border-radius:99px;overflow:hidden;margin-top:7px}.macro-progress span{display:block;height:100%;background:linear-gradient(90deg,#b77ec8,#e7a9c7);border-radius:99px}.nutrition-actions{display:flex;gap:10px;flex-wrap:wrap}.nutrition-actions button{flex:1;min-width:130px}.mini-note{font-size:12px;color:var(--muted);line-height:1.45;margin-top:10px}
 @media(max-width:560px){.nutrition-grid{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:1fr}.form-grid .wide{grid-column:auto}}
 
+
+.compact-calc{display:grid;grid-template-columns:1fr 1fr;gap:10px}.compact-calc .wide{grid-column:1/-1}.recipe-card{padding:14px;border:1px solid rgba(120,92,120,.12);border-radius:18px;background:rgba(255,255,255,.66);margin-top:10px}.recipe-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.recipe-head h4{margin:0;font-size:18px}.recipe-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.recipe-meta span{font-size:12px;padding:5px 9px;border-radius:999px;background:#f7edf4}.recipe-text{white-space:pre-wrap;margin-top:10px;line-height:1.45}.chart-wrap{overflow:hidden;border-radius:18px;background:linear-gradient(180deg,#fff,#fff8fc);padding:12px}.chart-svg{width:100%;height:220px;display:block}.chart-tabs{display:flex;gap:8px;overflow:auto;margin-bottom:10px}.chart-tabs button{border:0;padding:9px 12px;border-radius:999px;background:#f2e7ef;font-weight:700;white-space:nowrap}.chart-tabs button.active{background:#d998b5;color:white}.budget-edit{display:flex;gap:10px;align-items:center;margin-top:12px}.budget-edit input{flex:1}.ai-status{font-size:12px;color:#8e7182;margin:8px 0 0}.ai-suggestions{display:flex;gap:8px;overflow:auto;padding-bottom:4px}.empty-mini{padding:18px;text-align:center;color:#8e7182}.finance-summary-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}.finance-summary-grid .mini-stat{padding:13px;border-radius:16px;background:#fff8fc}.mini-stat small{display:block;color:#8e7182}.mini-stat b{display:block;font-size:18px;margin-top:4px}
 </style>
 </head>
 <body>
@@ -290,6 +292,13 @@ textarea.input{min-height:120px;resize:vertical}
     <div class="card-title">История замеров по неделям</div>
     <div id="measureHistory" class="history"></div>
   </div>
+  <div class="card" style="margin-top:16px">
+    <div class="card-title">Графики прогресса</div>
+    <div class="chart-tabs" id="measureChartTabs"></div>
+    <div class="chart-wrap"><svg id="measureChart" class="chart-svg" viewBox="0 0 360 220" preserveAspectRatio="none"></svg></div>
+    <div class="soft" id="measureChartSummary" style="margin-top:10px">Добавь минимум два замера, чтобы увидеть динамику.</div>
+  </div>
+
 </section>
 
 <section id="health" class="screen">
@@ -342,57 +351,39 @@ textarea.input{min-height:120px;resize:vertical}
 
 
 <section id="nutrition" class="screen">
-  <h2 class="section-title">Питание и КБЖУ 🍎</h2>
-  <div class="nutrition-hero">
-    <div class="eyebrow">ТВОЯ ДНЕВНАЯ ЦЕЛЬ</div>
-    <h3 id="nutritionGoalTitle">Рассчитай КБЖУ</h3>
-    <p class="soft" id="nutritionGoalText">Заполни данные ниже — расчёт сохранится в приложении.</p>
-  </div>
-
+  <h2 class="section-title">Питание 🍎</h2>
   <div class="card">
-    <div class="card-title">Расчёт КБЖУ</div>
-    <div class="form-grid">
-      <label>Возраст<input id="kbjuAge" type="number" min="14" max="90" placeholder="25"></label>
-      <label>Рост, см<input id="kbjuHeight" type="number" min="120" max="220" placeholder="167"></label>
-      <label>Вес, кг<input id="kbjuWeight" type="number" min="35" max="250" step="0.1" placeholder="58"></label>
-      <label>Активность<select id="kbjuActivity"><option value="1.2">Мало двигаюсь</option><option value="1.375">1–3 тренировки</option><option value="1.55">3–5 тренировок</option><option value="1.725">Очень активная</option></select></label>
-      <label class="wide">Цель<select id="kbjuGoal"><option value="0.9">Похудение</option><option value="1">Поддержание</option><option value="1.08">Набор мышц</option></select></label>
+    <div class="card-title">Маленький расчёт калорий</div>
+    <div class="compact-calc">
+      <label>Вес, кг<input id="miniWeight" type="number" step="0.1" placeholder="58"></label>
+      <label>Рост, см<input id="miniHeight" type="number" placeholder="167"></label>
+      <label>Возраст<input id="miniAge" type="number" placeholder="25"></label>
+      <label>Активность<select id="miniActivity"><option value="1.2">Низкая</option><option value="1.375">1–3 тренировки</option><option value="1.55">3–5 тренировок</option></select></label>
+      <label class="wide">Цель<select id="miniGoal"><option value="0.9">Снижение веса</option><option value="1">Поддержание</option><option value="1.08">Набор мышц</option></select></label>
     </div>
-    <button class="btn" style="margin-top:14px" onclick="calculateKBJU()">Рассчитать и сохранить</button>
-    <div class="mini-note">Расчёт ориентировочный по формуле Миффлина—Сан Жеора. При заболеваниях ЖКТ или других состояниях рацион лучше согласовать со специалистом.</div>
-  </div>
-
-  <h2 class="section-title">Мои цели</h2>
-  <div class="nutrition-grid">
-    <div class="macro-card"><small>Калории</small><b id="targetCalories">—</b></div>
-    <div class="macro-card"><small>Белки</small><b id="targetProtein">—</b></div>
-    <div class="macro-card"><small>Жиры</small><b id="targetFat">—</b></div>
-    <div class="macro-card"><small>Углеводы</small><b id="targetCarbs">—</b></div>
-  </div>
-
-  <h2 class="section-title">Сегодня</h2>
-  <div class="nutrition-grid">
-    <div class="macro-card"><small>Ккал</small><b id="todayCalories">0</b><div class="macro-progress"><span id="calProgress"></span></div></div>
-    <div class="macro-card"><small>Белки</small><b id="todayProtein">0 г</b><div class="macro-progress"><span id="proteinProgress"></span></div></div>
-    <div class="macro-card"><small>Жиры</small><b id="todayFat">0 г</b><div class="macro-progress"><span id="fatProgress"></span></div></div>
-    <div class="macro-card"><small>Углеводы</small><b id="todayCarbs">0 г</b><div class="macro-progress"><span id="carbProgress"></span></div></div>
+    <button class="btn" style="margin-top:12px" onclick="calculateMiniCalories()">Рассчитать</button>
+    <div class="nutrition-hero" style="margin-top:14px"><div class="eyebrow">ОРИЕНТИР НА ДЕНЬ</div><h3 id="miniCaloriesResult">1700 ккал</h3><p class="soft">Простой ориентир, без лишних таблиц.</p></div>
   </div>
 
   <div class="card" style="margin-top:16px">
-    <div class="card-title">Добавить приём пищи</div>
-    <div class="form-grid">
-      <label class="wide">Название<input id="foodName" placeholder="Например, омлет и хлеб"></label>
-      <label>Ккал<input id="foodCalories" type="number" min="0" placeholder="350"></label>
-      <label>Белки, г<input id="foodProtein" type="number" min="0" step="0.1" placeholder="25"></label>
-      <label>Жиры, г<input id="foodFat" type="number" min="0" step="0.1" placeholder="12"></label>
-      <label>Углеводы, г<input id="foodCarbs" type="number" min="0" step="0.1" placeholder="35"></label>
-      <label class="wide">Приём пищи<select id="foodMeal"><option>Завтрак</option><option>Обед</option><option>Ужин</option><option>Перекус</option></select></label>
-    </div>
-    <div class="nutrition-actions" style="margin-top:14px"><button class="btn" onclick="addFood()">Добавить</button><button class="btn ghost" onclick="clearTodayFood()">Очистить день</button></div>
+    <div class="card-title">Калории сегодня</div>
+    <div class="goal-line"><div><div class="goal-amount" id="calorieTodayValue">0 / 1700 ккал</div><div class="soft" id="calorieRemainText">Осталось 1700 ккал</div></div></div>
+    <div class="progress"><i id="calorieDayBar" style="width:0%"></i></div>
+    <div class="budget-edit"><input id="dailyCaloriesInput" class="input" type="number" min="0" placeholder="Сколько съедено сегодня"><button class="btn" onclick="saveDailyCalories()">Сохранить</button></div>
   </div>
 
-  <h2 class="section-title">Дневник питания</h2>
-  <div class="card" id="foodDiary"></div>
+  <h3 class="section-title" style="font-size:27px">Мои рецепты</h3>
+  <div class="card">
+    <div class="form-grid">
+      <label class="wide">Название<input id="recipeName" placeholder="Например, сырники"></label>
+      <label>Калории на порцию<input id="recipeCalories" type="number" min="0" placeholder="350"></label>
+      <label>Количество порций<input id="recipeServings" type="number" min="1" value="1"></label>
+      <label class="wide">Ингредиенты<textarea id="recipeIngredients" class="input" placeholder="Творог, яйцо, мука..."></textarea></label>
+      <label class="wide">Приготовление<textarea id="recipeSteps" class="input" placeholder="Смешать, сформировать, обжарить..."></textarea></label>
+    </div>
+    <button class="btn" style="margin-top:12px" onclick="addRecipe()">Сохранить рецепт</button>
+  </div>
+  <div id="recipeList"></div>
 </section>
 
 <section id="finance" class="screen">
@@ -434,7 +425,7 @@ textarea.input{min-height:120px;resize:vertical}
 
   <h3 class="section-title" style="font-size:27px">Бюджет месяца</h3>
   <div class="card">
-    <div class="goal-line"><div><div class="card-title">Лимит на расходы</div><div class="goal-amount" id="budgetValue">Не задан</div></div><button class="btn ghost" onclick="setMonthlyBudget()">Изменить</button></div>
+    <div class="goal-line"><div><div class="card-title">Лимит на расходы</div><div class="goal-amount" id="budgetValue">Не задан</div></div></div><div class="budget-edit"><input id="budgetInput" class="input" type="number" min="0" placeholder="Например, 50 000"><button class="btn ghost" onclick="setMonthlyBudget()">Сохранить</button></div>
     <div class="progress"><i id="budgetBar" style="width:0%"></i></div>
     <div class="budget-note" id="budgetNote">Задай комфортный лимит на месяц.</div>
   </div>
@@ -461,8 +452,8 @@ textarea.input{min-height:120px;resize:vertical}
       <button class="chip" onclick="askAI('Составь мне план на сегодня')">План дня</button>
       <button class="chip" onclick="askAI('Что делать по тренировке?')">Тренировка</button>
       <button class="chip" onclick="askAI('Я устала и нет сил')">Поддержка</button>
-      <button class="chip" onclick="askAI('К какому врачу записаться сначала?')">Врачи</button>
-    </div>
+      <button class="chip" onclick="askAI('К какому врачу записаться сначала?')">Врачи</button><button class="chip" onclick="askAI('Разбери мои расходы')">Финансы</button><button class="chip" onclick="askAI('Проанализируй мой прогресс')">Прогресс</button><button class="chip" onclick="askAI('Предложи рецепт')">Рецепт</button>
+    </div><div class="ai-status">Ассистент использует данные, сохранённые внутри Lena OS.</div>
     <div class="chat-input">
       <input id="aiInput" class="input" placeholder="Напиши сообщение…">
       <button class="small-btn" onclick="sendAI()">Отправить</button>
@@ -501,7 +492,7 @@ textarea.input{min-height:120px;resize:vertical}
 <script>
 const state = JSON.parse(localStorage.getItem('lenaAlpha7') || '{}');
 state.water ??= 500; state.steps ??= 0; state.calories ??= 0; state.workouts ??= 0;
-state.nutrition ??= {age:25,height:167,weight:58,activity:1.375,goal:0.9,targets:{calories:1700,protein:105,fat:55,carbs:195}}; state.foodDiary ??= []; state.measurements ??= {}; state.measureHistory ??= []; state.weights ??= {}; state.week ??= 1; state.lifeNote ??= ''; state.homeNote ??= ''; state.doctorNote ??= ''; state.chat ??= []; state.periodStart ??= ''; state.cycleLength ??= 27; state.progressPhotos ??= {before:'',after:''}; state.transactions ??= []; state.monthlyBudget ??= 0; state.feed ??= [];
+state.nutrition ??= {age:25,height:167,weight:58,activity:1.375,goal:0.9,targets:{calories:1700}}; state.foodDiary ??= []; state.recipes ??= []; state.dailyCalories ??= {};  state.measurements ??= {}; state.measureHistory ??= []; state.weights ??= {}; state.week ??= 1; state.lifeNote ??= ''; state.homeNote ??= ''; state.doctorNote ??= ''; state.chat ??= []; state.periodStart ??= ''; state.cycleLength ??= 27; state.progressPhotos ??= {before:'',after:''}; state.transactions ??= []; state.monthlyBudget ??= 0; state.feed ??= [];
 
 const plans = [
   {title:'Ягодицы A', icon:'🍑', exercises:[
@@ -615,6 +606,12 @@ function sendAI(){
    answer=`У тебя сохранено ${state.measureHistory.length} недельных замеров. Снимай новые раз в неделю утром, до еды, в одинаковой одежде и без попытки оценивать результат по одному дню.`;
  } else if(low.includes('кожа')||low.includes('уход')||low.includes('внешн')){
    answer='Для внешности сегодня лучше всего сработает база: мягкое очищение, увлажнение, SPF и не трогать воспаления. Один стабильный ритуал полезнее десяти новых средств.';
+ } else if(low.includes('расход')||low.includes('финанс')||low.includes('деньг')){
+   const tx=state.transactions||[], expenses=tx.filter(t=>t.type==='expense'), total=expenses.reduce((s,t)=>s+Number(t.amount),0), cats={};expenses.forEach(t=>cats[t.category]=(cats[t.category]||0)+Number(t.amount));const top=Object.entries(cats).sort((a,b)=>b[1]-a[1])[0];const budget=Number(state.monthlyBudget)||0;answer=expenses.length?`У тебя записано расходов на ${money(total)}. Больше всего: ${top?top[0]+' — '+money(top[1]):'пока недостаточно данных'}. ${budget?`Лимит месяца ${money(budget)}.`:'Задай месячный лимит — тогда я смогу следить за остатком.'}`:'Добавь хотя бы несколько расходов, и я покажу главную категорию и остаток бюджета.';
+ } else if(low.includes('прогресс')||low.includes('динамик')){
+   const h=state.measureHistory||[];if(h.length<2)answer='Сохрани минимум два замера в разделе «Фитнес», и я сравню вес, талию и ягодицы.';else{const a=h[0].values,b=h.at(-1).values;const fmt=(k,u)=>a[k]!=null&&b[k]!=null?`${(b[k]-a[k])>0?'+':''}${(b[k]-a[k]).toFixed(1)} ${u}`:'нет данных';answer=`Динамика с первой записи: вес ${fmt('weight','кг')}, талия ${fmt('waist','см')}, ягодицы ${fmt('glutes','см')}. Смотри не на один день, а на тренд за несколько недель.`}
+ } else if(low.includes('рецепт')||low.includes('приготов')){
+   answer=state.recipes.length?`У тебя сохранено рецептов: ${state.recipes.length}. Попробуй сегодня «${state.recipes[0].name}» — ${Math.round(state.recipes[0].calories||0)} ккал на порцию.`:'Быстрый вариант: омлет с сыром и хлебом или курица с картофелем и огурцом. Сохрани любимый вариант в разделе «Питание», и я буду предлагать его дальше.';
  } else if(low.includes('месяч')||low.includes('цикл')){
    answer=state.periodStart?'Календарь цикла уже заполнен в разделе «Здоровье». Помни, что расчёт ориентировочный; при сильной боли, необычном кровотечении или задержке лучше обратиться к врачу.':'Заполни первый день последних месячных и среднюю длину цикла в разделе «Здоровье», и приложение покажет ориентировочную следующую дату.';
  }
@@ -659,45 +656,32 @@ function openFinanceForm(type){document.getElementById('financeForm').classList.
 function closeFinanceForm(){document.getElementById('financeForm').classList.remove('open')}
 function addTransaction(){const amount=Number(document.getElementById('transactionAmount').value);if(!amount||amount<=0){toast('Укажи сумму операции');return}const name=document.getElementById('transactionName').value.trim()||financeCategory;const date=document.getElementById('transactionDate').value||new Date().toISOString().slice(0,10);const account=document.getElementById('transactionAccount').value;const cat=financeCategories[financeType].find(x=>x[0]===financeCategory)||['Другое','✨'];state.transactions.push({id:Date.now(),type:financeType,amount,name,date,account,category:cat[0],icon:cat[1]});document.getElementById('transactionAmount').value='';document.getElementById('transactionName').value='';closeFinanceForm();save();toast(financeType==='income'?'Доход добавлен 💚':'Расход добавлен 💸')}
 function deleteTransaction(id){state.transactions=state.transactions.filter(t=>t.id!==id);save();toast('Операция удалена')}
-function setMonthlyBudget(){const val=prompt('Какой лимит расходов поставить на месяц?',state.monthlyBudget||'');if(val===null)return;const n=Number(String(val).replace(/\s/g,'').replace(',','.'));if(!Number.isFinite(n)||n<0){toast('Не получилось распознать сумму');return}state.monthlyBudget=n;save();toast('Бюджет обновлён')}
-function renderFinance(){if(!document.getElementById('financeBalance'))return;const tx=state.transactions||[];const income=tx.filter(t=>t.type==='income').reduce((s,t)=>s+Number(t.amount),0);const expense=tx.filter(t=>t.type==='expense').reduce((s,t)=>s+Number(t.amount),0);const now=new Date(), ym=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;const current=tx.filter(t=>String(t.date||'').startsWith(ym));const mi=current.filter(t=>t.type==='income').reduce((s,t)=>s+Number(t.amount),0);const me=current.filter(t=>t.type==='expense').reduce((s,t)=>s+Number(t.amount),0);document.getElementById('financeBalance').textContent=money(income-expense);document.getElementById('monthIncome').textContent=money(mi);document.getElementById('monthExpense').textContent=money(me);document.getElementById('allIncome').textContent=money(income);document.getElementById('allExpense').textContent=money(expense);const budget=Number(state.monthlyBudget)||0;document.getElementById('budgetValue').textContent=budget?money(budget):'Не задан';document.getElementById('budgetLeft').textContent=budget?money(Math.max(0,budget-me)):'—';const pct=budget?Math.min(100,Math.round(me/budget*100)):0;document.getElementById('budgetBar').style.width=pct+'%';document.getElementById('budgetNote').textContent=budget?(me>budget?`Лимит превышен на ${money(me-budget)}`:`Потрачено ${money(me)} из ${money(budget)} · осталось ${money(budget-me)}`):'Задай комфортный лимит на месяц.';
+function setMonthlyBudget(){const el=document.getElementById('budgetInput');const n=Number(String(el.value||'').replace(/\s/g,'').replace(',','.'));if(!Number.isFinite(n)||n<0){toast('Укажи корректную сумму');return}state.monthlyBudget=n;el.value='';save();toast('Лимит расходов обновлён')}
+function renderFinance(){if(!document.getElementById('financeBalance'))return;const tx=state.transactions||[];const income=tx.filter(t=>t.type==='income').reduce((s,t)=>s+Number(t.amount),0);const expense=tx.filter(t=>t.type==='expense').reduce((s,t)=>s+Number(t.amount),0);const now=new Date(), ym=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;const current=tx.filter(t=>String(t.date||'').startsWith(ym));const mi=current.filter(t=>t.type==='income').reduce((s,t)=>s+Number(t.amount),0);const me=current.filter(t=>t.type==='expense').reduce((s,t)=>s+Number(t.amount),0);document.getElementById('financeBalance').textContent=money(income-expense);document.getElementById('monthIncome').textContent=money(mi);document.getElementById('monthExpense').textContent=money(me);document.getElementById('allIncome').textContent=money(income);document.getElementById('allExpense').textContent=money(expense);const budget=Number(state.monthlyBudget)||0;document.getElementById('budgetValue').textContent=budget?money(budget):'Не задан';const bi=document.getElementById('budgetInput');if(bi)bi.placeholder=budget?`Сейчас ${money(budget)}`:'Например, 50 000';document.getElementById('budgetLeft').textContent=budget?money(Math.max(0,budget-me)):'—';const pct=budget?Math.min(100,Math.round(me/budget*100)):0;document.getElementById('budgetBar').style.width=pct+'%';document.getElementById('budgetNote').textContent=budget?(me>budget?`Лимит превышен на ${money(me-budget)}`:`Потрачено ${money(me)} из ${money(budget)} · осталось ${money(budget-me)}`):'Задай комфортный лимит на месяц.';
  const expenses=current.filter(t=>t.type==='expense');const sums={};expenses.forEach(t=>sums[t.category]=(sums[t.category]||0)+Number(t.amount));const max=Math.max(1,...Object.values(sums));const analytics=document.getElementById('categoryAnalytics');analytics.innerHTML=Object.keys(sums).length?Object.entries(sums).sort((a,b)=>b[1]-a[1]).map(([cat,val])=>{const icon=(financeCategories.expense.find(x=>x[0]===cat)||['','✨'])[1];return `<div class="bar-row"><div class="bar-head"><span>${icon} ${safeText(cat)}</span><b>${money(val)}</b></div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(val/max*100)}%"></div></div></div>`}).join(''):'<div class="empty-state">Добавь первый расход — здесь появится красивая аналитика по категориям ✨</div>';
  const hist=document.getElementById('transactionHistory');hist.innerHTML=tx.length?tx.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))||b.id-a.id).map(t=>`<div class="finance-row"><div class="finance-icon">${t.icon||'✨'}</div><div class="finance-info"><b>${safeText(t.name)}</b><small>${new Date(t.date+'T12:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'short'})} · ${safeText(t.category)} · ${safeText(t.account||'Карта')}</small></div><div class="amount ${t.type==='income'?'plus-money':'minus-money'}">${t.type==='income'?'+':'−'}${money(t.amount)}</div><button class="delete-money" onclick="deleteTransaction(${Number(t.id)})">×</button></div>`).join(''):'<div class="empty-state">История пока пустая. Добавь доход или расход выше 🤍</div>';renderFinanceCategoryGrid()}
 
 
 
 function todayKey(){return new Date().toISOString().slice(0,10)}
-function calculateKBJU(){
- const age=Number(document.getElementById('kbjuAge').value),height=Number(document.getElementById('kbjuHeight').value),weight=Number(document.getElementById('kbjuWeight').value),activity=Number(document.getElementById('kbjuActivity').value),goal=Number(document.getElementById('kbjuGoal').value);
- if(!age||!height||!weight){toast('Заполни возраст, рост и вес');return}
- const bmr=10*weight+6.25*height-5*age-161;
- const calories=Math.max(1200,Math.round(bmr*activity*goal/10)*10);
- const protein=Math.round(weight*(goal>1?1.9:1.8));
- const fat=Math.round(weight*0.9);
- const carbs=Math.max(0,Math.round((calories-protein*4-fat*9)/4));
- state.nutrition={age,height,weight,activity,goal,targets:{calories,protein,fat,carbs}};
- save();toast('КБЖУ рассчитано 🍎')
+function calculateMiniCalories(){
+ const weight=Number(document.getElementById('miniWeight').value),height=Number(document.getElementById('miniHeight').value),age=Number(document.getElementById('miniAge').value),activity=Number(document.getElementById('miniActivity').value),goal=Number(document.getElementById('miniGoal').value);
+ if(!weight||!height||!age){toast('Заполни вес, рост и возраст');return}
+ const calories=Math.max(1200,Math.round(((10*weight+6.25*height-5*age-161)*activity*goal)/10)*10);
+ state.nutrition={age,height,weight,activity,goal,targets:{calories}};save();toast('Калории рассчитаны 🍎')
 }
-function addFood(){
- const name=document.getElementById('foodName').value.trim()||'Приём пищи';
- const calories=Number(document.getElementById('foodCalories').value||0),protein=Number(document.getElementById('foodProtein').value||0),fat=Number(document.getElementById('foodFat').value||0),carbs=Number(document.getElementById('foodCarbs').value||0);
- if(!calories&&!protein&&!fat&&!carbs){toast('Добавь КБЖУ продукта');return}
- state.foodDiary.push({id:Date.now(),date:todayKey(),meal:document.getElementById('foodMeal').value,name,calories,protein,fat,carbs});
- ['foodName','foodCalories','foodProtein','foodFat','foodCarbs'].forEach(id=>document.getElementById(id).value='');save();toast('Добавлено в дневник 🍽️')
+function saveDailyCalories(){const v=Number(document.getElementById('dailyCaloriesInput').value||0);state.dailyCalories[todayKey()]=Math.max(0,v);state.calories=Math.max(0,v);save();toast('Калории сохранены')}
+function addRecipe(){
+ const name=document.getElementById('recipeName').value.trim();if(!name){toast('Напиши название рецепта');return}
+ const recipe={id:Date.now(),name,calories:Number(document.getElementById('recipeCalories').value||0),servings:Number(document.getElementById('recipeServings').value||1),ingredients:document.getElementById('recipeIngredients').value.trim(),steps:document.getElementById('recipeSteps').value.trim()};
+ state.recipes.unshift(recipe);['recipeName','recipeCalories','recipeIngredients','recipeSteps'].forEach(id=>document.getElementById(id).value='');document.getElementById('recipeServings').value=1;save();toast('Рецепт сохранён 🥣')
 }
-function deleteFood(id){state.foodDiary=state.foodDiary.filter(x=>x.id!==id);save();toast('Запись удалена')}
-function clearTodayFood(){if(!confirm('Очистить дневник питания за сегодня?'))return;state.foodDiary=state.foodDiary.filter(x=>x.date!==todayKey());save();toast('День очищен')}
+function deleteRecipe(id){state.recipes=state.recipes.filter(r=>r.id!==id);save();toast('Рецепт удалён')}
+function useRecipeCalories(id){const r=state.recipes.find(x=>x.id===id);if(!r)return;const current=Number(state.dailyCalories[todayKey()]||0);state.dailyCalories[todayKey()]=current+Number(r.calories||0);state.calories=state.dailyCalories[todayKey()];save();toast('Калории рецепта добавлены')}
 function renderNutrition(){
- const n=state.nutrition||{},t=n.targets||{};
- const ids={kbjuAge:n.age,kbjuHeight:n.height,kbjuWeight:n.weight,kbjuActivity:n.activity,kbjuGoal:n.goal};Object.entries(ids).forEach(([id,v])=>{const e=document.getElementById(id);if(e&&v!=null)e.value=v});
- const goalName=Number(n.goal)>1?'Набор мышц':Number(n.goal)<1?'Похудение':'Поддержание';
- document.getElementById('nutritionGoalTitle').textContent=t.calories?`${t.calories} ккал · ${goalName}`:'Рассчитай КБЖУ';
- document.getElementById('nutritionGoalText').textContent=t.calories?`Белки ${t.protein} г · жиры ${t.fat} г · углеводы ${t.carbs} г`:'Заполни данные ниже — расчёт сохранится в приложении.';
- document.getElementById('targetCalories').textContent=t.calories?`${t.calories} ккал`:'—';document.getElementById('targetProtein').textContent=t.protein?`${t.protein} г`:'—';document.getElementById('targetFat').textContent=t.fat?`${t.fat} г`:'—';document.getElementById('targetCarbs').textContent=t.carbs?`${t.carbs} г`:'—';
- const foods=(state.foodDiary||[]).filter(x=>x.date===todayKey());const sum=k=>foods.reduce((a,x)=>a+Number(x[k]||0),0);const total={calories:sum('calories'),protein:sum('protein'),fat:sum('fat'),carbs:sum('carbs')};state.calories=Math.round(total.calories);
- document.getElementById('todayCalories').textContent=Math.round(total.calories);document.getElementById('todayProtein').textContent=`${total.protein.toFixed(1)} г`;document.getElementById('todayFat').textContent=`${total.fat.toFixed(1)} г`;document.getElementById('todayCarbs').textContent=`${total.carbs.toFixed(1)} г`;
- [['calProgress','calories'],['proteinProgress','protein'],['fatProgress','fat'],['carbProgress','carbs']].forEach(([id,k])=>document.getElementById(id).style.width=Math.min(100,t[k]?total[k]/t[k]*100:0)+'%');
- const box=document.getElementById('foodDiary');box.innerHTML=foods.length?foods.slice().reverse().map(x=>`<div class="food-row"><div><b>${safeText(x.name)}</b><small>${safeText(x.meal)} · Б ${Number(x.protein).toFixed(1)} · Ж ${Number(x.fat).toFixed(1)} · У ${Number(x.carbs).toFixed(1)}</small></div><div><span class="food-kcal">${Math.round(x.calories)} ккал</span><button class="delete-money" onclick="deleteFood(${Number(x.id)})">×</button></div></div>`).join(''):'<div class="empty-state">Сегодня пока ничего не добавлено 🤍</div>';
+ const n=state.nutrition||{}, target=Number(n.targets?.calories||1700);[['miniWeight',n.weight],['miniHeight',n.height],['miniAge',n.age],['miniActivity',n.activity],['miniGoal',n.goal]].forEach(([id,v])=>{const e=document.getElementById(id);if(e&&v!=null)e.value=v});
+ document.getElementById('miniCaloriesResult').textContent=target+' ккал';const eaten=Number(state.dailyCalories[todayKey()]??state.calories??0);state.calories=eaten;document.getElementById('dailyCaloriesInput').value=eaten||'';document.getElementById('calorieTodayValue').textContent=`${Math.round(eaten)} / ${target} ккал`;const remain=target-eaten;document.getElementById('calorieRemainText').textContent=remain>=0?`Осталось ${Math.round(remain)} ккал`:`Превышение на ${Math.round(-remain)} ккал`;document.getElementById('calorieDayBar').style.width=Math.min(100,eaten/target*100)+'%';
+ const box=document.getElementById('recipeList');box.innerHTML=state.recipes.length?state.recipes.map(r=>`<div class="recipe-card"><div class="recipe-head"><div><h4>${safeText(r.name)}</h4><div class="recipe-meta"><span>${Math.round(r.calories||0)} ккал/порция</span><span>${Number(r.servings||1)} порц.</span></div></div><button class="delete-money" onclick="deleteRecipe(${Number(r.id)})">×</button></div>${r.ingredients?`<div class="recipe-text"><b>Ингредиенты:</b> ${safeText(r.ingredients)}</div>`:''}${r.steps?`<div class="recipe-text"><b>Как готовить:</b> ${safeText(r.steps)}</div>`:''}<button class="btn ghost" style="margin-top:12px" onclick="useRecipeCalories(${Number(r.id)})">Добавить калории за порцию</button></div>`).join(''):'<div class="card empty-mini">Здесь будут храниться твои любимые рецепты 🤍</div>';
 }
 
 function setRing(id,pct){const el=document.getElementById(id);if(el)el.style.setProperty('--p',Math.max(0,Math.min(100,pct)))}
@@ -809,6 +793,16 @@ function renderMeasurements(){
  document.getElementById('measureSummary').innerHTML=Object.keys(names).map(k=>`<div class="mini"><span class="soft">${names[k]}</span><b>${state.measurements[k]??'—'} ${state.measurements[k]!=null?units[k]:''}</b></div>`).join('');
  document.querySelectorAll('.measure-input').forEach(i=>i.value=state.measurements[i.dataset.key]??'');
 }
+
+let measureChartKey='weight';
+function setMeasureChart(key){measureChartKey=key;renderMeasureChart()}
+function renderMeasureChart(){
+ const tabs=document.getElementById('measureChartTabs'),svg=document.getElementById('measureChart'),summary=document.getElementById('measureChartSummary');if(!tabs||!svg)return;
+ const labels={weight:'Вес',waist:'Талия',glutes:'Ягодицы',lowerBelly:'Низ живота',chest:'Грудь'};tabs.innerHTML=Object.entries(labels).map(([k,v])=>`<button class="${k===measureChartKey?'active':''}" onclick="setMeasureChart('${k}')">${v}</button>`).join('');
+ const rows=(state.measureHistory||[]).filter(x=>x.values&&Number.isFinite(Number(x.values[measureChartKey]))).slice(-12);if(rows.length<2){svg.innerHTML='<text x="180" y="112" text-anchor="middle" fill="#9b7e8d" font-size="14">Нужно минимум два замера</text>';summary.textContent='Добавь минимум два замера, чтобы увидеть динамику.';return}
+ const vals=rows.map(x=>Number(x.values[measureChartKey])),min=Math.min(...vals),max=Math.max(...vals),pad=(max-min||1)*.2,w=330,h=170,x0=18,y0=18;const lo=min-pad,hi=max+pad;const pts=vals.map((v,i)=>[x0+i*(w/(vals.length-1)),y0+h-(v-lo)/(hi-lo)*h]);const path=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');svg.innerHTML=`<line x1="18" y1="188" x2="348" y2="188" stroke="#eadce4"/><path d="${path}" fill="none" stroke="#d48eae" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`+pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="5" fill="#fff" stroke="#d48eae" stroke-width="3"/><text x="${p[0]}" y="${p[1]-10}" text-anchor="middle" fill="#765766" font-size="11">${vals[i]}</text>`).join('');const d=vals.at(-1)-vals[0],unit=measureChartKey==='weight'?'кг':'см';summary.textContent=`С первой записи: ${d>0?'+':''}${d.toFixed(1)} ${unit} · записей: ${rows.length}`;
+}
+
 function render(){renderNutrition();
  document.getElementById('healthWater').textContent=state.water;
  document.getElementById('healthSteps').textContent=state.steps.toLocaleString('ru-RU');
@@ -817,7 +811,7 @@ function render(){renderNutrition();
  document.getElementById('homeNote').value=state.homeNote||'';
  document.getElementById('doctorNote').value=state.doctorNote||'';
  document.getElementById('beautyTip').textContent=dailyIndex(beautyTips);
- renderGlow();renderMeasurements();renderMeasureHistory();renderChat();renderCycle();renderPhotos();renderFinance();renderHome2();
+ renderGlow();renderMeasurements();renderMeasureHistory();renderMeasureChart();renderChat();renderCycle();renderPhotos();renderFinance();renderHome2();
 }
 const d=new Date();document.getElementById('date').textContent=d.toLocaleDateString('ru-RU',{day:'numeric',month:'long'});
 restoreChecks('.homecheck','alpha7home');
