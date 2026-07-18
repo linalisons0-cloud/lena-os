@@ -427,7 +427,7 @@ textarea.input{min-height:120px;resize:vertical}
   <div class="card">
     <div class="goal-line"><div><div class="card-title">Лимит на расходы</div><div class="goal-amount" id="budgetValue">Не задан</div></div></div><div class="budget-edit"><input id="budgetInput" class="input" type="number" min="0" placeholder="Например, 50 000"><button class="btn ghost" onclick="setMonthlyBudget()">Сохранить</button></div>
     <div class="progress"><i id="budgetBar" style="width:0%"></i></div>
-    <div class="budget-note" id="budgetNote">Задай комфортный лимит на месяц.</div>
+    <div class="budget-note" id="budgetNote">Задай комфортный лимит на месяц.</div><button class="text-link" style="margin-top:14px" onclick="resetLenaStorage()">Очистить старую память LENA OS</button>
   </div>
 
   <h3 class="section-title" style="font-size:27px">На что уходят деньги</h3>
@@ -490,14 +490,32 @@ textarea.input{min-height:120px;resize:vertical}
 <div id="toast" class="toast"></div>
 
 <script>
-const STORAGE_KEY='lenaOS_9_6_state';
+const STORAGE_KEY='lenaOS_9_7_core';
 const LEGACY_KEY='lenaAlpha7';
+const OLD_STATE_KEYS=['lenaOS_9_6_state','lenaOS_9_5_state','lenaOS_9_4_state','lenaOS_9_3_state','lenaOS_9_2_state','lenaAlpha7'];
+function cleanupOldLenaStorage(keepCurrent=true){
+  try{
+    const remove=[];
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i)||'';
+      if((/^lenaOS_/i.test(k)||/^lenaAlpha/i.test(k)) && (!keepCurrent||k!==STORAGE_KEY)) remove.push(k);
+    }
+    OLD_STATE_KEYS.forEach(k=>{if((!keepCurrent||k!==STORAGE_KEY)&&!remove.includes(k))remove.push(k)});
+    remove.forEach(k=>localStorage.removeItem(k));
+  }catch(e){console.warn('Не удалось очистить старые данные',e)}
+}
 function safeParse(raw){try{return raw?JSON.parse(raw):{}}catch(e){console.warn('Повреждённые сохранения:',e);return {}}}
 function loadState(){
   const current=safeParse(localStorage.getItem(STORAGE_KEY));
   if(Object.keys(current).length)return current;
-  const legacy=safeParse(localStorage.getItem(LEGACY_KEY));
-  return legacy;
+  for(const key of OLD_STATE_KEYS){
+    const old=safeParse(localStorage.getItem(key));
+    if(Object.keys(old).length){
+      old.progressPhotos={before:'',after:''};
+      return old;
+    }
+  }
+  return {};
 }
 const state=loadState();
 if(state.water==null)state.water=500;if(state.steps==null)state.steps=0;if(state.calories==null)state.calories=0;if(state.workouts==null)state.workouts=0;
@@ -529,18 +547,35 @@ const plans = [
 ];
 
 function save(){
+ const core={...state,progressPhotos:{before:'',after:''}};
+ const payload=JSON.stringify(core);
  try{
-   const core={...state,progressPhotos:{before:'',after:''}};
-   localStorage.setItem(STORAGE_KEY,JSON.stringify(core));
-   localStorage.removeItem(LEGACY_KEY);
+   cleanupOldLenaStorage(true);
+   localStorage.setItem(STORAGE_KEY,payload);
    render();
    return true;
  }catch(e){
    console.error('Ошибка сохранения',e);
-   toast('Не удалось сохранить. Освободи память браузера и попробуй ещё раз.');
-   render();
-   return false;
+   try{
+     cleanupOldLenaStorage(false);
+     localStorage.setItem(STORAGE_KEY,payload);
+     render();
+     toast('Сохранено после очистки старых данных ✓');
+     return true;
+   }catch(e2){
+     console.error('Повторная ошибка сохранения',e2);
+     const reason=(e2&&e2.name==='SecurityError')?'Safari запретил хранилище. Открой сайт не в приватном режиме.':'Память сайта переполнена. Очисти данные именно этого сайта в Safari.';
+     toast(reason);
+     render();
+     return false;
+   }
  }
+}
+function resetLenaStorage(){
+ try{cleanupOldLenaStorage(false);localStorage.clear();sessionStorage.clear()}catch(e){}
+ if('caches' in window)caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k))));
+ toast('Память LENA OS очищена. Обновляю…');
+ setTimeout(()=>location.reload(true),700);
 }
 function openPhotoDB(){return new Promise((resolve,reject)=>{const req=indexedDB.open('LenaOSPhotos',1);req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains('photos'))db.createObjectStore('photos')};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)})}
 async function savePhotoToDB(type,value){const db=await openPhotoDB();return new Promise((resolve,reject)=>{const tx=db.transaction('photos','readwrite');tx.objectStore('photos').put(value,type);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error)})}
@@ -841,7 +876,7 @@ function render(){renderNutrition();
  document.getElementById('beautyTip').textContent=dailyIndex(beautyTips);
  renderGlow();renderMeasurements();renderMeasureHistory();renderMeasureChart();renderChat();renderCycle();renderPhotos();renderFinance();renderHome2();
 }
-const d=new Date();document.title='Lena OS 9.6 — Stable Save';document.getElementById('date').textContent=d.toLocaleDateString('ru-RU',{day:'numeric',month:'long'});
+const d=new Date();document.title='Lena OS 9.7 — Clean Storage';document.getElementById('date').textContent=d.toLocaleDateString('ru-RU',{day:'numeric',month:'long'});
 restoreChecks('.homecheck','alpha7home');
 restoreChecks('.glowcheck','alpha7glow');
 restoreChecks('.lifecheck','alpha7life');
