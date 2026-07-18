@@ -490,7 +490,15 @@ textarea.input{min-height:120px;resize:vertical}
 <div id="toast" class="toast"></div>
 
 <script>
-const state = JSON.parse(localStorage.getItem('lenaAlpha7') || '{}');
+const STORAGE_KEY='lenaOS92';
+function readSavedState(){
+  try{
+    const current=localStorage.getItem(STORAGE_KEY);
+    const legacy=localStorage.getItem('lenaAlpha7');
+    return JSON.parse(current||legacy||'{}')||{};
+  }catch(e){console.warn('Storage read error',e);return {}}
+}
+const state = readSavedState();
 state.water ??= 500; state.steps ??= 0; state.calories ??= 0; state.workouts ??= 0;
 state.nutrition ??= {age:25,height:167,weight:58,activity:1.375,goal:0.9,targets:{calories:1700}}; state.foodDiary ??= []; state.recipes ??= []; state.dailyCalories ??= {};  state.measurements ??= {}; state.measureHistory ??= []; state.weights ??= {}; state.week ??= 1; state.lifeNote ??= ''; state.homeNote ??= ''; state.doctorNote ??= ''; state.chat ??= []; state.periodStart ??= ''; state.cycleLength ??= 27; state.progressPhotos ??= {before:'',after:''}; state.transactions ??= []; state.monthlyBudget ??= 0; state.feed ??= [];
 
@@ -518,7 +526,16 @@ const plans = [
   ]}
 ];
 
-function save(){localStorage.setItem('lenaAlpha7',JSON.stringify(state));render()}
+function save(){
+  try{
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+    localStorage.setItem('lenaAlpha7',JSON.stringify(state));
+  }catch(e){
+    console.warn('Storage save error',e);
+    toast('Не удалось сохранить данные. Открой приложение через опубликованную ссылку, не из ZIP.');
+  }
+  render();
+}
 
 
 const beautyTips=[
@@ -740,11 +757,11 @@ function completeWorkout(btn){
  state.workouts=Math.min(3,state.workouts+1);save();toast('Тренировка засчитана 💪')
 }
 function restoreChecks(selector,key){
- const vals=JSON.parse(localStorage.getItem(key)||'[]');
+ let vals=[];try{vals=JSON.parse(localStorage.getItem(key)||'[]')}catch(e){vals=[]}
  document.querySelectorAll(selector).forEach((el,i)=>{
    el.checked=!!vals[i]; toggleStrike(el);
    el.onchange=()=>{
-     localStorage.setItem(key,JSON.stringify([...document.querySelectorAll(selector)].map(x=>x.checked)));
+     try{localStorage.setItem(key,JSON.stringify([...document.querySelectorAll(selector)].map(x=>x.checked)))}catch(e){console.warn(e)}
      toggleStrike(el); renderGlow();
    }
  })
@@ -779,7 +796,7 @@ function renderPlans(){
    box.appendChild(card);
  })
 }
-function saveWeight(key,val){state.weights[key]=val;localStorage.setItem('lenaAlpha7',JSON.stringify(state))}
+function saveWeight(key,val){state.weights[key]=val;save()}
 function saveMeasurements(){
  const values={...state.measurements};
  document.querySelectorAll('.measure-input').forEach(i=>{if(i.value!=='')values[i.dataset.key]=Number(i.value)});

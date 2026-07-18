@@ -1,0 +1,346 @@
+<nav class="bottom">
+  <button class="nav active" data-screen="home" onclick="go('home')"><b>🏠</b><span>Главная</span></button>
+  <button class="nav" data-screen="glow" onclick="go('glow')"><b>✨</b><span>Glow Up</span></button>
+  <button class="nav" data-screen="fitness" onclick="go('fitness')"><b>💪</b><span>Фитнес</span></button>
+  <button class="nav" data-screen="health" onclick="go('health')"><b>🩺</b><span>Здоровье</span></button>
+  <button class="nav" data-screen="nutrition" onclick="go('nutrition')"><b>🍎</b><span>Питание</span></button>
+  <button class="nav" data-screen="finance" onclick="go('finance')"><b>💸</b><span>Финансы</span></button>
+  <button class="nav" data-screen="life" onclick="go('life')"><b>♡</b><span>Жизнь</span></button>
+</nav>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const state = JSON.parse(localStorage.getItem('lenaAlpha7') || '{}');
+state.water ??= 500; state.steps ??= 0; state.calories ??= 0; state.workouts ??= 0;
+state.nutrition ??= {age:25,height:167,weight:58,activity:1.375,goal:0.9,targets:{calories:1700}}; state.foodDiary ??= []; state.recipes ??= []; state.dailyCalories ??= {};  state.measurements ??= {}; state.measureHistory ??= []; state.weights ??= {}; state.week ??= 1; state.lifeNote ??= ''; state.homeNote ??= ''; state.doctorNote ??= ''; state.chat ??= []; state.periodStart ??= ''; state.cycleLength ??= 27; state.progressPhotos ??= {before:'',after:''}; state.transactions ??= []; state.monthlyBudget ??= 0; state.feed ??= [];
+
+const plans = [
+  {title:'Ягодицы A', icon:'🍑', exercises:[
+    ['Болгарские выпады с гантелями',['2×10','3×8','3×12','3×10']],
+    ['Присед с гантелью',['2×10','3×8','3×12','3×10']],
+    ['Ягодичный мост с дожимом',['2×12','2×10','3×15','3×12']],
+    ['Ягодичная проходка с резинкой',['2 круга','2 круга','3 круга','3 круга']],
+    ['Кор',['2 подхода','3 подхода','3 подхода','3 подхода']]
+  ]},
+  {title:'Верх', icon:'🪽', exercises:[
+    ['Тяга по одной руке',['2×10','3×8','3×12','3×10']],
+    ['Тяга штанги в наклоне',['2×10','3×8','3×12','3×10']],
+    ['Махи на плечи',['2×10','2×8','3×12','3×10']],
+    ['Подъём гантелей перед собой',['2×12','2×10','3×15','3×12']],
+    ['Кор',['2 подхода','3 подхода','3 подхода','3 подхода']]
+  ]},
+  {title:'Ягодицы B', icon:'🔥', exercises:[
+    ['Зашагивания',['2×10','3×8','3×12','3×10']],
+    ['Румынская тяга на одной ноге',['2×10','3×8','3×12','3×10']],
+    ['Ягодичный мост — короткая амплитуда',['2×12','3×8','3×10','3×12']],
+    ['Разгибания с резинкой',['2×12','3×15','3×15','3×20']],
+    ['Кор',['2 подхода','3 подхода','3 подхода','3 подхода']]
+  ]}
+];
+
+function save(){localStorage.setItem('lenaAlpha7',JSON.stringify(state));render()}
+
+
+const beautyTips=[
+'Наноси увлажняющий крем на слегка влажную кожу — так он лучше удерживает влагу.',
+'Чтобы лицо выглядело свежее, утром выпей воды и сделай 1 минуту лёгкого массажа от центра лица к ушам.',
+'SPF наноси не только на лицо, но и на шею и уши.',
+'Для более аккуратного макияжа дай уходу впитаться 5–10 минут.',
+'Не трогай воспаления руками: это реально уменьшает риск пятен.',
+'Промокай лицо салфеткой, а не растирай полотенцем.',
+'Перед сном убери волосы от лица — это помогает коже оставаться чище.'
+];
+const homeFocuses=[
+'Сделай сегодня одну задачу, после которой станет легче дышать.',
+'Не идеальный день, а один хороший шаг.',
+'Выбери главное: тело, здоровье или спокойствие — и поддержи это сегодня.',
+'Сначала база: вода, еда, движение, сон.',
+'Пусть сегодня будет день без перегруза.'
+];
+function dailyIndex(list){const d=new Date();const key=d.getFullYear()*400+(d.getMonth()+1)*31+d.getDate();return list[key%list.length]}
+function saveCycle(){
+ state.periodStart=document.getElementById('periodStart').value;
+ state.cycleLength=Number(document.getElementById('cycleLength').value||27);
+ save(); toast('Календарь цикла сохранён 🌸');
+}
+function renderCycle(){
+ const startInput=document.getElementById('periodStart'); const lenInput=document.getElementById('cycleLength');
+ startInput.value=state.periodStart||''; lenInput.value=state.cycleLength||27;
+ const box=document.getElementById('periodCalendar'); const summary=document.getElementById('cycleSummary');
+ box.innerHTML='';
+ if(!state.periodStart){summary.textContent='Укажи первый день последних месячных — приложение рассчитает следующую дату.';return}
+ const start=new Date(state.periodStart+'T12:00:00'); const len=state.cycleLength||27;
+ const next=new Date(start); next.setDate(next.getDate()+len);
+ const today=new Date(); today.setHours(0,0,0,0);
+ const diff=Math.ceil((next-today)/86400000);
+ summary.textContent=diff>=0?`Ориентировочно до следующего цикла: ${diff} дн.`:'Расчётная дата уже прошла — обнови первый день цикла.';
+ const monthStart=new Date(today.getFullYear(),today.getMonth(),1);
+ const days=new Date(today.getFullYear(),today.getMonth()+1,0).getDate();
+ const pad=(monthStart.getDay()+6)%7;
+ for(let i=0;i<pad;i++){box.innerHTML+='<div></div>'}
+ for(let day=1;day<=days;day++){
+   const dt=new Date(today.getFullYear(),today.getMonth(),day);
+   const delta=Math.round((dt-start)/86400000);
+   const mod=((delta%len)+len)%len;
+   const isPeriod=mod>=0&&mod<5;
+   const untilNext=Math.abs(Math.round((dt-next)/86400000));
+   const predicted=untilNext<3;
+   const isToday=dt.toDateString()===today.toDateString();
+   box.innerHTML+=`<div class="day ${isPeriod?'period':''} ${predicted?'predicted':''} ${isToday?'today':''}">${day}</div>`;
+ }
+}
+function loadProgressPhoto(type,input){
+ const file=input.files&&input.files[0]; if(!file)return;
+ const reader=new FileReader();
+ reader.onload=()=>{state.progressPhotos[type]=reader.result;save();renderPhotos();toast('Фото сохранено 📷')};
+ reader.readAsDataURL(file);
+}
+function clearProgressPhoto(type){state.progressPhotos[type]='';save();renderPhotos()}
+function renderPhotos(){
+ ['before','after'].forEach(type=>{
+   const slot=document.getElementById(type+'Slot'); const val=state.progressPhotos[type];
+   slot.innerHTML=`<span class="photo-label">${type==='before'?'До':'После'}</span>`+(val?`<img src="${val}" alt="">`:'<span class="soft">Добавь фото</span>');
+ });
+}
+function askAI(text){document.getElementById('aiInput').value=text;sendAI()}
+
+function saveHomeNote(){state.homeNote=document.getElementById('homeNote').value;save();toast('Заметка сохранена ✍️')}
+function saveDoctorNote(){state.doctorNote=document.getElementById('doctorNote').value;save();toast('План по врачам сохранён')}
+function sendAI(){
+ const input=document.getElementById('aiInput'); const text=input.value.trim(); if(!text)return;
+ state.chat.push({role:'user',text});
+ const low=text.toLowerCase();
+ let answer='Я рядом 🤍 Давай разложим это на один понятный шаг. Напиши, что сейчас важнее: здоровье, тело, уход, дела или настроение.';
+ if(low.includes('план')){
+   const pending=[...document.querySelectorAll('.homecheck')].filter(x=>!x.checked).length;
+   answer=`План без перегруза: 1) выбери одну главную задачу, 2) закрой базовый уход, 3) добери воду, 4) сделай прогулку. Сейчас на главной осталось ${pending} невыполненных задач.`;
+ } else if(low.includes('тренир')||low.includes('зал')){
+   answer=`На этой неделе выполнено ${state.workouts||0} из 3 тренировок. Сегодня выбери следующую невыполненную тренировку, начни с разминки и записывай рабочий вес. Увеличивай вес только когда техника стабильная.`;
+ } else if(low.includes('врач')||low.includes('здоров')){
+   const doctors=[...document.querySelectorAll('.doctorcheck')];
+   const left=doctors.filter(x=>!x.checked).length;
+   answer=`В списке осталось ${left} пунктов. Сначала выбери врача по самой актуальной жалобе, затем запишись к нему и только после этого переходи к следующему.`;
+ } else if(low.includes('устал')||low.includes('нет сил')||low.includes('плохо')){
+   answer='Сегодня можно сделать минимальный день: поесть, выпить воды, принять душ, выполнить один пункт ухода и лечь спать пораньше. Это не провал — это забота.';
+ } else if(low.includes('замер')||low.includes('вес')||low.includes('талия')){
+   answer=`У тебя сохранено ${state.measureHistory.length} недельных замеров. Снимай новые раз в неделю утром, до еды, в одинаковой одежде и без попытки оценивать результат по одному дню.`;
+ } else if(low.includes('кожа')||low.includes('уход')||low.includes('внешн')){
+   answer='Для внешности сегодня лучше всего сработает база: мягкое очищение, увлажнение, SPF и не трогать воспаления. Один стабильный ритуал полезнее десяти новых средств.';
+ } else if(low.includes('расход')||low.includes('финанс')||low.includes('деньг')){
+   const tx=state.transactions||[], expenses=tx.filter(t=>t.type==='expense'), total=expenses.reduce((s,t)=>s+Number(t.amount),0), cats={};expenses.forEach(t=>cats[t.category]=(cats[t.category]||0)+Number(t.amount));const top=Object.entries(cats).sort((a,b)=>b[1]-a[1])[0];const budget=Number(state.monthlyBudget)||0;answer=expenses.length?`У тебя записано расходов на ${money(total)}. Больше всего: ${top?top[0]+' — '+money(top[1]):'пока недостаточно данных'}. ${budget?`Лимит месяца ${money(budget)}.`:'Задай месячный лимит — тогда я смогу следить за остатком.'}`:'Добавь хотя бы несколько расходов, и я покажу главную категорию и остаток бюджета.';
+ } else if(low.includes('прогресс')||low.includes('динамик')){
+   const h=state.measureHistory||[];if(h.length<2)answer='Сохрани минимум два замера в разделе «Фитнес», и я сравню вес, талию и ягодицы.';else{const a=h[0].values,b=h.at(-1).values;const fmt=(k,u)=>a[k]!=null&&b[k]!=null?`${(b[k]-a[k])>0?'+':''}${(b[k]-a[k]).toFixed(1)} ${u}`:'нет данных';answer=`Динамика с первой записи: вес ${fmt('weight','кг')}, талия ${fmt('waist','см')}, ягодицы ${fmt('glutes','см')}. Смотри не на один день, а на тренд за несколько недель.`}
+ } else if(low.includes('рецепт')||low.includes('приготов')){
+   answer=state.recipes.length?`У тебя сохранено рецептов: ${state.recipes.length}. Попробуй сегодня «${state.recipes[0].name}» — ${Math.round(state.recipes[0].calories||0)} ккал на порцию.`:'Быстрый вариант: омлет с сыром и хлебом или курица с картофелем и огурцом. Сохрани любимый вариант в разделе «Питание», и я буду предлагать его дальше.';
+ } else if(low.includes('месяч')||low.includes('цикл')){
+   answer=state.periodStart?'Календарь цикла уже заполнен в разделе «Здоровье». Помни, что расчёт ориентировочный; при сильной боли, необычном кровотечении или задержке лучше обратиться к врачу.':'Заполни первый день последних месячных и среднюю длину цикла в разделе «Здоровье», и приложение покажет ориентировочную следующую дату.';
+ }
+ state.chat.push({role:'bot',text:answer});
+ input.value=''; save(); renderChat();
+}
+function renderChat(){
+ const box=document.getElementById('chatBox');
+ const intro='<div class="bubble bot">Привет, Лена 🤍 Я помогу составить план дня, поддержу, разберу тренировку или напомню, на чём сейчас лучше сосредоточиться.</div>';
+ box.innerHTML=intro+state.chat.map(m=>`<div class="bubble ${m.role}">${m.text.replace(/[&<>]/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[s]))}</div>`).join('');
+ box.scrollTop=box.scrollHeight;
+}
+function renderMeasureHistory(){
+ const box=document.getElementById('measureHistory');
+ if(!state.measureHistory.length){box.innerHTML='<div class="soft">Пока нет истории. Сохрани первый замер — он появится здесь.</div>';return}
+ const labels={height:'Рост',weight:'Вес',waist:'Талия',glutes:'Ягодицы',lowerBelly:'Низ живота',chest:'Грудь'};
+ box.innerHTML=state.measureHistory.slice().reverse().map((entry,revIndex)=>{
+   const originalIndex=state.measureHistory.length-1-revIndex;
+   const prev=originalIndex>0?state.measureHistory[originalIndex-1].values:{};
+   const vals=Object.keys(labels).map(k=>{
+     const v=entry.values[k];
+     if(v==null)return '';
+     const d=prev[k]!=null?(v-prev[k]):null;
+     const unit=k==='weight'?'кг':'см';
+     return `<div><span class="soft">${labels[k]}</span><b>${v} ${unit}</b>${d==null?'':`<div class="change">${d>0?'+':''}${d.toFixed(1)} ${unit}</div>`}</div>`;
+   }).join('');
+   return `<div class="history-row"><div class="history-head"><b>${entry.date}</b><span class="pill">неделя ${originalIndex+1}</span></div><div class="history-values">${vals}</div></div>`;
+ }).join('');
+}
+
+
+const financeCategories={
+ expense:[['Еда','🍔'],['Покупки','🛍️'],['Красота','💄'],['Спорт','🏋️'],['Транспорт','🚕'],['Дом','🏠'],['Здоровье','💊'],['Подарки','🎁'],['Развлечения','🎬'],['Обучение','📚'],['Подписки','📱'],['Другое','✨']],
+ income:[['Зарплата','💰'],['Подработка','💻'],['Подарок','🎁'],['Возврат','↩️'],['Продажа','🛍️'],['Другое','✨']]
+};
+let financeType='expense', financeCategory='Еда';
+function money(v){return Math.round(Number(v)||0).toLocaleString('ru-RU')+' ₽'}
+function safeText(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function setFinanceType(type){financeType=type;financeCategory=financeCategories[type][0][0];renderFinanceCategoryGrid();document.getElementById('typeIncome').classList.toggle('active',type==='income');document.getElementById('typeExpense').classList.toggle('active',type==='expense')}
+function renderFinanceCategoryGrid(){const box=document.getElementById('categoryGrid');if(!box)return;box.innerHTML=financeCategories[financeType].map(([name,icon])=>`<button class="category-btn ${name===financeCategory?'active':''}" onclick="financeCategory='${name}';renderFinanceCategoryGrid()"><span>${icon}</span>${name}</button>`).join('')}
+function openFinanceForm(type){document.getElementById('financeForm').classList.add('open');document.getElementById('transactionDate').value=new Date().toISOString().slice(0,10);setFinanceType(type);setTimeout(()=>document.getElementById('transactionAmount').focus(),50)}
+function closeFinanceForm(){document.getElementById('financeForm').classList.remove('open')}
+function addTransaction(){const amount=Number(document.getElementById('transactionAmount').value);if(!amount||amount<=0){toast('Укажи сумму операции');return}const name=document.getElementById('transactionName').value.trim()||financeCategory;const date=document.getElementById('transactionDate').value||new Date().toISOString().slice(0,10);const account=document.getElementById('transactionAccount').value;const cat=financeCategories[financeType].find(x=>x[0]===financeCategory)||['Другое','✨'];state.transactions.push({id:Date.now(),type:financeType,amount,name,date,account,category:cat[0],icon:cat[1]});document.getElementById('transactionAmount').value='';document.getElementById('transactionName').value='';closeFinanceForm();save();toast(financeType==='income'?'Доход добавлен 💚':'Расход добавлен 💸')}
+function deleteTransaction(id){state.transactions=state.transactions.filter(t=>t.id!==id);save();toast('Операция удалена')}
+function setMonthlyBudget(){const el=document.getElementById('budgetInput');const n=Number(String(el.value||'').replace(/\s/g,'').replace(',','.'));if(!Number.isFinite(n)||n<0){toast('Укажи корректную сумму');return}state.monthlyBudget=n;el.value='';save();toast('Лимит расходов обновлён')}
+function renderFinance(){if(!document.getElementById('financeBalance'))return;const tx=state.transactions||[];const income=tx.filter(t=>t.type==='income').reduce((s,t)=>s+Number(t.amount),0);const expense=tx.filter(t=>t.type==='expense').reduce((s,t)=>s+Number(t.amount),0);const now=new Date(), ym=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;const current=tx.filter(t=>String(t.date||'').startsWith(ym));const mi=current.filter(t=>t.type==='income').reduce((s,t)=>s+Number(t.amount),0);const me=current.filter(t=>t.type==='expense').reduce((s,t)=>s+Number(t.amount),0);document.getElementById('financeBalance').textContent=money(income-expense);document.getElementById('monthIncome').textContent=money(mi);document.getElementById('monthExpense').textContent=money(me);document.getElementById('allIncome').textContent=money(income);document.getElementById('allExpense').textContent=money(expense);const budget=Number(state.monthlyBudget)||0;document.getElementById('budgetValue').textContent=budget?money(budget):'Не задан';const bi=document.getElementById('budgetInput');if(bi)bi.placeholder=budget?`Сейчас ${money(budget)}`:'Например, 50 000';document.getElementById('budgetLeft').textContent=budget?money(Math.max(0,budget-me)):'—';const pct=budget?Math.min(100,Math.round(me/budget*100)):0;document.getElementById('budgetBar').style.width=pct+'%';document.getElementById('budgetNote').textContent=budget?(me>budget?`Лимит превышен на ${money(me-budget)}`:`Потрачено ${money(me)} из ${money(budget)} · осталось ${money(budget-me)}`):'Задай комфортный лимит на месяц.';
+ const expenses=current.filter(t=>t.type==='expense');const sums={};expenses.forEach(t=>sums[t.category]=(sums[t.category]||0)+Number(t.amount));const max=Math.max(1,...Object.values(sums));const analytics=document.getElementById('categoryAnalytics');analytics.innerHTML=Object.keys(sums).length?Object.entries(sums).sort((a,b)=>b[1]-a[1]).map(([cat,val])=>{const icon=(financeCategories.expense.find(x=>x[0]===cat)||['','✨'])[1];return `<div class="bar-row"><div class="bar-head"><span>${icon} ${safeText(cat)}</span><b>${money(val)}</b></div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(val/max*100)}%"></div></div></div>`}).join(''):'<div class="empty-state">Добавь первый расход — здесь появится красивая аналитика по категориям ✨</div>';
+ const hist=document.getElementById('transactionHistory');hist.innerHTML=tx.length?tx.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))||b.id-a.id).map(t=>`<div class="finance-row"><div class="finance-icon">${t.icon||'✨'}</div><div class="finance-info"><b>${safeText(t.name)}</b><small>${new Date(t.date+'T12:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'short'})} · ${safeText(t.category)} · ${safeText(t.account||'Карта')}</small></div><div class="amount ${t.type==='income'?'plus-money':'minus-money'}">${t.type==='income'?'+':'−'}${money(t.amount)}</div><button class="delete-money" onclick="deleteTransaction(${Number(t.id)})">×</button></div>`).join(''):'<div class="empty-state">История пока пустая. Добавь доход или расход выше 🤍</div>';renderFinanceCategoryGrid()}
+
+
+
+function todayKey(){return new Date().toISOString().slice(0,10)}
+function calculateMiniCalories(){
+ const weight=Number(document.getElementById('miniWeight').value),height=Number(document.getElementById('miniHeight').value),age=Number(document.getElementById('miniAge').value),activity=Number(document.getElementById('miniActivity').value),goal=Number(document.getElementById('miniGoal').value);
+ if(!weight||!height||!age){toast('Заполни вес, рост и возраст');return}
+ const calories=Math.max(1200,Math.round(((10*weight+6.25*height-5*age-161)*activity*goal)/10)*10);
+ state.nutrition={age,height,weight,activity,goal,targets:{calories}};save();toast('Калории рассчитаны 🍎')
+}
+function saveDailyCalories(){const v=Number(document.getElementById('dailyCaloriesInput').value||0);state.dailyCalories[todayKey()]=Math.max(0,v);state.calories=Math.max(0,v);save();toast('Калории сохранены')}
+function addRecipe(){
+ const name=document.getElementById('recipeName').value.trim();if(!name){toast('Напиши название рецепта');return}
+ const recipe={id:Date.now(),name,calories:Number(document.getElementById('recipeCalories').value||0),servings:Number(document.getElementById('recipeServings').value||1),ingredients:document.getElementById('recipeIngredients').value.trim(),steps:document.getElementById('recipeSteps').value.trim()};
+ state.recipes.unshift(recipe);['recipeName','recipeCalories','recipeIngredients','recipeSteps'].forEach(id=>document.getElementById(id).value='');document.getElementById('recipeServings').value=1;save();toast('Рецепт сохранён 🥣')
+}
+function deleteRecipe(id){state.recipes=state.recipes.filter(r=>r.id!==id);save();toast('Рецепт удалён')}
+function useRecipeCalories(id){const r=state.recipes.find(x=>x.id===id);if(!r)return;const current=Number(state.dailyCalories[todayKey()]||0);state.dailyCalories[todayKey()]=current+Number(r.calories||0);state.calories=state.dailyCalories[todayKey()];save();toast('Калории рецепта добавлены')}
+function renderNutrition(){
+ const n=state.nutrition||{}, target=Number(n.targets?.calories||1700);[['miniWeight',n.weight],['miniHeight',n.height],['miniAge',n.age],['miniActivity',n.activity],['miniGoal',n.goal]].forEach(([id,v])=>{const e=document.getElementById(id);if(e&&v!=null)e.value=v});
+ document.getElementById('miniCaloriesResult').textContent=target+' ккал';const eaten=Number(state.dailyCalories[todayKey()]??state.calories??0);state.calories=eaten;document.getElementById('dailyCaloriesInput').value=eaten||'';document.getElementById('calorieTodayValue').textContent=`${Math.round(eaten)} / ${target} ккал`;const remain=target-eaten;document.getElementById('calorieRemainText').textContent=remain>=0?`Осталось ${Math.round(remain)} ккал`:`Превышение на ${Math.round(-remain)} ккал`;document.getElementById('calorieDayBar').style.width=Math.min(100,eaten/target*100)+'%';
+ const box=document.getElementById('recipeList');box.innerHTML=state.recipes.length?state.recipes.map(r=>`<div class="recipe-card"><div class="recipe-head"><div><h4>${safeText(r.name)}</h4><div class="recipe-meta"><span>${Math.round(r.calories||0)} ккал/порция</span><span>${Number(r.servings||1)} порц.</span></div></div><button class="delete-money" onclick="deleteRecipe(${Number(r.id)})">×</button></div>${r.ingredients?`<div class="recipe-text"><b>Ингредиенты:</b> ${safeText(r.ingredients)}</div>`:''}${r.steps?`<div class="recipe-text"><b>Как готовить:</b> ${safeText(r.steps)}</div>`:''}<button class="btn ghost" style="margin-top:12px" onclick="useRecipeCalories(${Number(r.id)})">Добавить калории за порцию</button></div>`).join(''):'<div class="card empty-mini">Здесь будут храниться твои любимые рецепты 🤍</div>';
+}
+
+function setRing(id,pct){const el=document.getElementById(id);if(el)el.style.setProperty('--p',Math.max(0,Math.min(100,pct)))}
+function renderHome2(){
+ const now=new Date(), h=now.getHours();
+ const greeting=h<6?'Доброй ночи':h<12?'Доброе утро':h<18?'Добрый день':'Добрый вечер';
+ const emoji=h<6?'🌙':h<12?'☀️':h<18?'🤍':'🌙';
+ document.getElementById('homeGreeting').textContent=`${greeting}, Лена ${emoji}`;
+ document.getElementById('homeSummary').textContent=now.toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'})+' · всё важное уже собрано здесь.';
+ const checks=[...document.querySelectorAll('.homecheck')], done=checks.filter(x=>x.checked).length, pct=checks.length?Math.round(done/checks.length*100):0;
+ document.getElementById('dayProgressText').textContent=`${pct}% выполнено`;
+ document.getElementById('dayRingValue').textContent=pct+'%'; setRing('dayRing',pct);
+ document.getElementById('dayProgressHint').textContent=pct===100?'День закрыт. Ты умница 🤍':pct>=60?'Осталось совсем немного.':pct?`Ещё ${checks.length-done} пунктов — спокойно, без гонки.`:'Начнём с одного маленького шага.';
+ const waterPct=Math.round((state.water||0)/2000*100), calPct=Math.round((state.calories||0)/1700*100), stepPct=Math.round((state.steps||0)/7000*100);
+ [['waterRing',waterPct],['habitRing',pct],['calorieRing',calPct],['stepRing',stepPct]].forEach(x=>setRing(...x));
+ document.getElementById('ringWater').textContent=Math.min(100,waterPct)+'%';document.getElementById('ringHabits').textContent=pct+'%';document.getElementById('ringCalories').textContent=Math.min(100,calPct)+'%';document.getElementById('ringSteps').textContent=Math.min(100,stepPct)+'%';
+ document.getElementById('waterRemain').textContent=state.water>=2000?'цель выполнена':`осталось ${money(2000-state.water).replace(' ₽',' мл')}`;
+ document.getElementById('habitRemain').textContent=pct===100?'всё готово':`ещё ${checks.length-done}`;
+ document.getElementById('calorieRemain').textContent=`${state.calories} из 1700`;
+ document.getElementById('stepRemain').textContent=`${(state.steps||0).toLocaleString('ru-RU')} из 7000`;
+ document.getElementById('homeBeautyTip').textContent=dailyIndex(beautyTips);
+ const w=state.measurements.weight, waist=state.measurements.waist, glutes=state.measurements.glutes;
+ document.getElementById('homeWeight').textContent=w?`${w} кг`:'—';document.getElementById('weightSub').textContent=w?'последний замер':'нет данных';document.getElementById('homeWaist').textContent=waist?`${waist} см`:'—';document.getElementById('homeGlutes').textContent=glutes?`${glutes} см`:'—';document.getElementById('weekWorkouts').textContent=`${state.workouts||0} / 3`;
+ const tx=state.transactions||[], income=tx.filter(t=>t.type==='income').reduce((s,t)=>s+Number(t.amount),0), expense=tx.filter(t=>t.type==='expense').reduce((s,t)=>s+Number(t.amount),0);
+ document.getElementById('homeFinanceBalance').textContent=money(income-expense);document.getElementById('homeIncome').textContent=money(income);document.getElementById('homeExpense').textContent=money(expense);
+ let insight='Начни с воды и одного пункта ухода — этого уже достаточно для хорошего старта.';
+ if(state.water<750&&h>=12) insight='Воды пока немного. Добавь один стакан прямо сейчас 💧';
+ else if((state.workouts||0)<2&&h>=16) insight='На этой неделе ещё есть место для спокойной тренировки или прогулки.';
+ else if(expense>income&&tx.length) insight='Расходы сейчас выше доходов. Загляни в категории — без чувства вины, просто для ясности.';
+ else if(pct>=70) insight='Ты уже закрыла большую часть дня. Не забывай замечать свой прогресс 🤍';
+ document.getElementById('homeInsight').textContent=insight;
+ const feed=[];
+ if(state.workouts)feed.push(['🏋️',`${state.workouts} тренировок отмечено`,`движение становится привычкой`]);
+ if(state.measureHistory.length)feed.push(['📏','Добавлены новые замеры',`всего записей: ${state.measureHistory.length}`]);
+ if(state.progressPhotos.before||state.progressPhotos.after)feed.push(['📸','Фото прогресса сохранено','твоя история изменений растёт']);
+ if(tx.length)feed.push(['💸',`${tx.length} финансовых операций`,`баланс: ${money(income-expense)}`]);
+ if(pct)feed.push(['✨',`${done} привычек выполнено сегодня`,`текущий прогресс: ${pct}%`]);
+ if(!feed.length)feed.push(['🤍','Твоя лента начинается сегодня','отмечай привычки, тренировки и прогресс']);
+ document.getElementById('lifeFeed').innerHTML=feed.slice(0,5).map(x=>`<div class="feed-item"><span>${x[0]}</span><div><b>${x[1]}</b><small>${x[2]}</small></div></div>`).join('');
+}
+
+function go(id){
+ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+ document.getElementById(id).classList.add('active');
+ document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('active',n.dataset.screen===id));
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+function toast(t){const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1500)}
+function addWater(){state.water=Math.min(4000,state.water+250);save();toast('Добавила 250 мл 💧')}
+function addSteps(){state.steps=Math.min(50000,state.steps+500);save();toast('Добавила 500 шагов 👟')}
+function saveCalories(){state.calories=Number(document.getElementById('caloriesInput').value||0);save();toast('Калории сохранены')}
+function saveLifeNote(){state.lifeNote=document.getElementById('lifeNote').value;save();toast('Заметка сохранена 🤍')}
+function completeWorkout(btn){
+ if(btn.dataset.done)return;
+ btn.dataset.done='1';btn.textContent='Готово ✓';btn.classList.add('ghost');
+ state.workouts=Math.min(3,state.workouts+1);save();toast('Тренировка засчитана 💪')
+}
+function restoreChecks(selector,key){
+ const vals=JSON.parse(localStorage.getItem(key)||'[]');
+ document.querySelectorAll(selector).forEach((el,i)=>{
+   el.checked=!!vals[i]; toggleStrike(el);
+   el.onchange=()=>{
+     localStorage.setItem(key,JSON.stringify([...document.querySelectorAll(selector)].map(x=>x.checked)));
+     toggleStrike(el); renderGlow();
+   }
+ })
+}
+function toggleStrike(el){const row=el.closest('.task-row');if(row)row.classList.toggle('done',el.checked)}
+function renderGlow(){
+ const all=[...document.querySelectorAll('.glowcheck,.lifecheck,.homecheck')];
+ const done=all.filter(x=>x.checked).length;
+ const pct=all.length?Math.round(done/all.length*100):0;
+ document.getElementById('glowPercent').textContent=pct+'%';
+ const glow=[...document.querySelectorAll('.glowcheck')];
+ const gp=glow.length?Math.round(glow.filter(x=>x.checked).length/glow.length*100):0;
+ document.getElementById('carePercent').textContent=gp+'%';
+ document.getElementById('careBar').style.width=gp+'%';
+}
+function setWeek(n){state.week=n;save();renderPlans()}
+function renderPlans(){
+ document.querySelectorAll('.week-btn').forEach(b=>b.classList.toggle('active',Number(b.dataset.week)===state.week));
+ const box=document.getElementById('workoutPlans'); box.innerHTML='';
+ plans.forEach((plan,pi)=>{
+   const card=document.createElement('div'); card.className='card workout';
+   card.innerHTML=`<h3>${plan.icon} ${plan.title}</h3>`;
+   plan.exercises.forEach((ex,ei)=>{
+     const key=`${pi}-${ei}-w${state.week}`;
+     const row=document.createElement('div'); row.className='exercise';
+     row.innerHTML=`<div><b>${ex[0]}</b><small>${ex[1][state.week-1]}</small></div>
+       <input inputmode="decimal" placeholder="вес, кг" value="${state.weights[key]??''}" oninput="saveWeight('${key}',this.value)">
+       <label style="display:flex;align-items:center;gap:7px;justify-content:flex-end"><span class="soft">✓</span><input class="check" type="checkbox"></label>`;
+     card.appendChild(row);
+   });
+   const btn=document.createElement('button');btn.className='btn';btn.style.marginTop='15px';btn.textContent='Засчитать тренировку';btn.onclick=()=>completeWorkout(btn);card.appendChild(btn);
+   box.appendChild(card);
+ })
+}
+function saveWeight(key,val){state.weights[key]=val;localStorage.setItem('lenaAlpha7',JSON.stringify(state))}
+function saveMeasurements(){
+ const values={...state.measurements};
+ document.querySelectorAll('.measure-input').forEach(i=>{if(i.value!=='')values[i.dataset.key]=Number(i.value)});
+ state.measurements=values;
+ state.measureHistory.push({date:new Date().toLocaleDateString('ru-RU'),values:{...values}});
+ save();toast('Замеры и изменения сохранены ✨');
+}
+function renderMeasurements(){
+ const names={height:'Рост',weight:'Вес',waist:'Талия',glutes:'Ягодицы',lowerBelly:'Низ живота',chest:'Грудь'};
+ const units={height:'см',weight:'кг',waist:'см',glutes:'см',lowerBelly:'см',chest:'см'};
+ document.getElementById('measureSummary').innerHTML=Object.keys(names).map(k=>`<div class="mini"><span class="soft">${names[k]}</span><b>${state.measurements[k]??'—'} ${state.measurements[k]!=null?units[k]:''}</b></div>`).join('');
+ document.querySelectorAll('.measure-input').forEach(i=>i.value=state.measurements[i.dataset.key]??'');
+}
+
+let measureChartKey='weight';
+function setMeasureChart(key){measureChartKey=key;renderMeasureChart()}
+function renderMeasureChart(){
+ const tabs=document.getElementById('measureChartTabs'),svg=document.getElementById('measureChart'),summary=document.getElementById('measureChartSummary');if(!tabs||!svg)return;
+ const labels={weight:'Вес',waist:'Талия',glutes:'Ягодицы',lowerBelly:'Низ живота',chest:'Грудь'};tabs.innerHTML=Object.entries(labels).map(([k,v])=>`<button class="${k===measureChartKey?'active':''}" onclick="setMeasureChart('${k}')">${v}</button>`).join('');
+ const rows=(state.measureHistory||[]).filter(x=>x.values&&Number.isFinite(Number(x.values[measureChartKey]))).slice(-12);if(rows.length<2){svg.innerHTML='<text x="180" y="112" text-anchor="middle" fill="#9b7e8d" font-size="14">Нужно минимум два замера</text>';summary.textContent='Добавь минимум два замера, чтобы увидеть динамику.';return}
+ const vals=rows.map(x=>Number(x.values[measureChartKey])),min=Math.min(...vals),max=Math.max(...vals),pad=(max-min||1)*.2,w=330,h=170,x0=18,y0=18;const lo=min-pad,hi=max+pad;const pts=vals.map((v,i)=>[x0+i*(w/(vals.length-1)),y0+h-(v-lo)/(hi-lo)*h]);const path=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');svg.innerHTML=`<line x1="18" y1="188" x2="348" y2="188" stroke="#eadce4"/><path d="${path}" fill="none" stroke="#d48eae" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`+pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="5" fill="#fff" stroke="#d48eae" stroke-width="3"/><text x="${p[0]}" y="${p[1]-10}" text-anchor="middle" fill="#765766" font-size="11">${vals[i]}</text>`).join('');const d=vals.at(-1)-vals[0],unit=measureChartKey==='weight'?'кг':'см';summary.textContent=`С первой записи: ${d>0?'+':''}${d.toFixed(1)} ${unit} · записей: ${rows.length}`;
+}
+
+function render(){renderNutrition();
+ document.getElementById('healthWater').textContent=state.water;
+ document.getElementById('healthSteps').textContent=state.steps.toLocaleString('ru-RU');
+ document.getElementById('fitnessDone').textContent=state.workouts;
+ document.getElementById('lifeNote').value=state.lifeNote||'';
+ document.getElementById('homeNote').value=state.homeNote||'';
+ document.getElementById('doctorNote').value=state.doctorNote||'';
+ document.getElementById('beautyTip').textContent=dailyIndex(beautyTips);
+ renderGlow();renderMeasurements();renderMeasureHistory();renderMeasureChart();renderChat();renderCycle();renderPhotos();renderFinance();renderHome2();
+}
+const d=new Date();document.getElementById('date').textContent=d.toLocaleDateString('ru-RU',{day:'numeric',month:'long'});
+restoreChecks('.homecheck','alpha7home');
+restoreChecks('.glowcheck','alpha7glow');
+restoreChecks('.lifecheck','alpha7life');
+restoreChecks('.doctorcheck','alpha7doctors');
+renderPlans();render();
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js'))}
+</script>
+</body>
+</html>
